@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Excel Processing - Upload & Download</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #28a745;
+            --secondary-green: #20c997;
+            --light-green: #d4edda;
+            --dark-green: #155724;
+            --accent-green: #34ce57;
+            --white: #ffffff;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-dark: #212529;
+        }
+
+        body {
+            background: var(--light-gray);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-dark);
+        }
+        
+        .main-container {
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin: 2rem auto;
+            padding: 2rem;
+            max-width: 1200px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--primary-green);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: rgba(40, 167, 69, 0.02);
+            cursor: pointer;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--accent-green);
+            background: rgba(40, 167, 69, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--accent-green);
+            background: rgba(40, 167, 69, 0.1);
+            border-width: 3px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn-custom {
+            background: var(--primary-green);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            color: var(--white);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+        }
+        
+        .btn-custom:hover {
+            background: var(--accent-green);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+            color: var(--white);
+        }
+        
+        .btn-success-custom {
+            background: var(--primary-green);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            color: var(--white);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+        }
+        
+        .btn-success-custom:hover {
+            background: var(--accent-green);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+            color: var(--white);
+        }
+        
+        .preview-card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
+            border: 1px solid var(--medium-gray);
+        }
+        
+        .card-header {
+            background: var(--primary-green) !important;
+            color: var(--white) !important;
+            border-radius: 12px 12px 0 0 !important;
+            border: none !important;
+            padding: 1.5rem !important;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-success { background-color: var(--primary-green); }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        
+        .progress-bar-custom {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--primary-green);
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--medium-gray);
+        }
+        
+        .table th {
+            background: var(--primary-green);
+            color: var(--white);
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+        
+        .table td {
+            padding: 1rem;
+            border-color: var(--medium-gray);
+        }
+        
+        .table-striped > tbody > tr:nth-of-type(odd) > td {
+            background-color: rgba(40, 167, 69, 0.02);
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .icon-large {
+            font-size: 4rem;
+            color: var(--primary-green);
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+            gap: 1rem;
+        }
+        
+        .step {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--medium-gray);
+            color: var(--dark-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 3px solid var(--white);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step.active {
+            background: var(--primary-green);
+            color: var(--white);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .step.completed {
+            background: var(--accent-green);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(52, 206, 87, 0.3);
+        }
+        
+        .badge {
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .alert-info {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--dark-green);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .text-primary {
+            color: var(--primary-green) !important;
+        }
+        
+        .text-success {
+            color: var(--primary-green) !important;
+        }
+        
+        .bg-primary {
+            background-color: var(--primary-green) !important;
+        }
+        
+        .bg-success {
+            background-color: var(--primary-green) !important;
+        }
+        
+        .bg-warning {
+            background-color: #ffc107 !important;
+            color: var(--text-dark) !important;
+        }
+        
+        .btn-outline-secondary {
+            border-color: var(--medium-gray);
+            color: var(--dark-gray);
+            border-radius: 8px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: var(--medium-gray);
+            border-color: var(--dark-gray);
+            color: var(--text-dark);
+        }
+        
+        .display-5 {
+            color: var(--primary-green);
+        }
+        
+        .lead {
+            color: var(--dark-gray);
+        }
+        
+        .text-muted {
+            color: var(--dark-gray) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold mb-3">
+                    <i class="fas fa-file-excel me-3"></i>
+                    Sistem Excel Processing
+                </h1>
+                <p class="lead">Upload, Process, dan Download file Excel dengan format yang diinginkan</p>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" id="step1">1</div>
+                <div class="step" id="step2">2</div>
+                <div class="step" id="step3">3</div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="uploadSection" class="fade-in">
+                <div class="upload-area" id="uploadArea">
+                    <div class="icon-large">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h4 class="mb-3">Upload File Excel</h4>
+                    <p class="text-muted mb-4">Drag & drop file Excel (.xlsx, .xls) atau klik untuk memilih file</p>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                    <button class="btn btn-custom" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-folder-open me-2"></i>Pilih File
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="preview-card fade-in" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Preview Data
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Nama File:</strong> <span id="fileName"></span></p>
+                            <p><strong>Total Baris:</strong> <span id="totalRows"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Total Kolom:</strong> <span id="totalColumns"></span></p>
+                            <p><strong>Status:</strong> <span class="status-indicator status-success"></span>Berhasil diupload</p>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="previewTable">
+                            <thead>
+                                <tr>
+                                    <th>Field Terdeteksi</th>
+                                    <th>Lokasi</th>
+                                    <th>Pola Data</th>
+                                    <th>Sample Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4">
+                        <h6><i class="fas fa-info-circle me-2"></i>Analisis Cerdas</h6>
+                        <p class="mb-1"><strong>Total Sheet:</strong> <span id="totalSheets">-</span></p>
+                        <p class="mb-1"><strong>Field Terdeteksi:</strong> <span id="detectedFields">-</span></p>
+                        <p class="mb-0"><strong>Status Learning:</strong> <span id="learningStatus">-</span></p>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button class="btn btn-success-custom" id="processBtn">
+                            <i class="fas fa-cogs me-2"></i>Proses Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Section -->
+            <div id="processingSection" class="preview-card fade-in" style="display: none;">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Memproses Data
+                    </h5>
+                </div>
+                <div class="card-body text-center p-4">
+                    <div class="loading-spinner mb-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <p class="mb-4">Sedang memproses data Excel...</p>
+                    <div class="progress mb-4">
+                        <div class="progress-bar progress-bar-custom" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Section -->
+            <div id="downloadSection" class="preview-card fade-in" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>Data Berhasil Diproses
+                    </h5>
+                </div>
+                <div class="card-body text-center p-4">
+                    <div class="icon-large text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h4 class="text-success mb-3">File Excel berhasil diproses!</h4>
+                    <p class="text-muted mb-4">File output telah siap untuk didownload dengan format yang diinginkan.</p>
+                    
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="d-grid gap-3">
+                                <button class="btn btn-success-custom" id="downloadBtn">
+                                    <i class="fas fa-download me-2"></i>Download File
+                                </button>
+                                <button class="btn btn-outline-secondary" id="newFileBtn">
+                                    <i class="fas fa-plus me-2"></i>Upload File Baru
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Alert -->
+            <div id="errorAlert" class="alert alert-danger fade-in" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentFile = null;
+        let currentStep = 1;
+
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('uploadSection');
+        const previewSection = document.getElementById('previewSection');
+        const processingSection = document.getElementById('processingSection');
+        const downloadSection = document.getElementById('downloadSection');
+        const errorAlert = document.getElementById('errorAlert');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+
+        // File Selection Handler
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        }
+
+        // Drag and Drop Handlers
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        // Upload File
+        function uploadFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showError('Hanya file Excel (.xlsx, .xls) yang didukung');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading();
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text(); // Ambil response sebagai text dulu
+            })
+            .then(text => {
+                try {
+                    // Coba parse JSON
+                    const data = JSON.parse(text);
+                    hideLoading();
+                    if (data.success) {
+                        currentFile = data.filename;
+                        showPreview(data.preview);
+                        updateStep(2);
+                    } else {
+                        showError(data.error || 'Error tidak diketahui');
+                    }
+                } catch (jsonError) {
+                    // Jika JSON parsing gagal, tampilkan error
+                    hideLoading();
+                    console.error('Response text:', text);
+                    showError('Error parsing response dari server. Silakan coba lagi.');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Upload error:', error);
+                showError('Error saat upload file: ' + error.message);
+            });
+        }
+
+        // Show Preview
+        function showPreview(previewData) {
+            document.getElementById('fileName').textContent = currentFile;
+            
+            // Update info panel
+            if (previewData.summary) {
+                document.getElementById('totalSheets').textContent = previewData.total_sheets || '-';
+                document.getElementById('detectedFields').textContent = previewData.summary.detected_field_count || '-';
+                document.getElementById('learningStatus').textContent = 'Berhasil Mempelajari Data';
+            } else {
+                // Fallback untuk data lama
+                document.getElementById('totalRows').textContent = previewData.total_rows || '-';
+                document.getElementById('totalColumns').textContent = previewData.total_columns || '-';
+                document.getElementById('totalSheets').textContent = '1';
+                document.getElementById('detectedFields').textContent = previewData.total_columns || '-';
+                document.getElementById('learningStatus').textContent = 'Mode Sederhana';
+            }
+
+            const tableBody = document.getElementById('previewTableBody');
+            tableBody.innerHTML = '';
+
+            if (previewData.global_detected_fields) {
+                // Tampilkan field yang terdeteksi secara cerdas
+                Object.entries(previewData.global_detected_fields).forEach(([field, locations]) => {
+                    const row = document.createElement('tr');
+                    const locationText = locations.map(loc => `${loc.sheet}:${loc.column}`).join(', ');
+                    
+                    row.innerHTML = `
+                        <td><strong>${field.replace(/_/g, ' ').toUpperCase()}</strong></td>
+                        <td><span class="badge bg-primary">${locationText}</span></td>
+                        <td><span class="badge bg-success">Terdeteksi Otomatis</span></td>
+                        <td>${getSmartSampleData(previewData, field)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else if (previewData.columns) {
+                // Fallback untuk data lama
+                previewData.columns.forEach((column, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${column}</strong></td>
+                        <td><span class="badge bg-info">Kolom ${index + 1}</span></td>
+                        <td><span class="badge bg-warning">Manual</span></td>
+                        <td>${getSampleData(previewData.sample_data, column)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            uploadSection.style.display = 'none';
+            previewSection.style.display = 'block';
+            hideError();
+        }
+
+        // Get Sample Data
+        function getSampleData(sampleData, column) {
+            if (sampleData && sampleData.length > 0) {
+                const values = sampleData.map(row => row[column]).filter(val => val !== undefined && val !== null);
+                return values.slice(0, 3).join(', ') || 'N/A';
+            }
+            return 'N/A';
+        }
+        
+        // Get Smart Sample Data
+        function getSmartSampleData(previewData, field) {
+            if (previewData.sheets) {
+                // Cari sample data dari semua sheet
+                for (const [sheetName, sheetData] of Object.entries(previewData.sheets)) {
+                    if (sheetData.sample_data) {
+                        for (const [colName, sampleData] of Object.entries(sheetData.sample_data)) {
+                            if (sheetData.detected_fields && sheetData.detected_fields[colName] === field) {
+                                return sampleData.slice(0, 3).join(', ') || 'N/A';
+                            }
+                        }
+                    }
+                }
+            }
+            return 'N/A';
+        }
+
+        // Process Data
+        document.getElementById('processBtn').addEventListener('click', function() {
+            processData();
+        });
+
+        function processData() {
+            previewSection.style.display = 'none';
+            processingSection.style.display = 'block';
+            updateStep(3);
+
+            const progressBar = document.querySelector('.progress-bar');
+            let progress = 0;
+            
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = progress + '%';
+            }, 200);
+
+            fetch('/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ options: {} })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text(); // Ambil response sebagai text dulu
+            })
+            .then(text => {
+                try {
+                    // Coba parse JSON
+                    const data = JSON.parse(text);
+                    clearInterval(progressInterval);
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        if (data.success) {
+                            showDownloadSection();
+                        } else {
+                            showError(data.error || 'Error tidak diketahui');
+                            showPreviewSection();
+                        }
+                    }, 500);
+                } catch (jsonError) {
+                    // Jika JSON parsing gagal, tampilkan error
+                    clearInterval(progressInterval);
+                    console.error('Response text:', text);
+                    showError('Error parsing response dari server. Silakan coba lagi.');
+                    showPreviewSection();
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Process error:', error);
+                showError('Error saat memproses data: ' + error.message);
+                showPreviewSection();
+            });
+        }
+
+        // Show Download Section
+        function showDownloadSection() {
+            processingSection.style.display = 'none';
+            downloadSection.style.display = 'block';
+            hideError();
+        }
+
+        // Download File
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            window.location.href = '/download';
+        });
+
+        // New File Upload
+        document.getElementById('newFileBtn').addEventListener('click', function() {
+            resetToUpload();
+        });
+
+        // Reset to Upload
+        function resetToUpload() {
+            currentFile = null;
+            currentStep = 1;
+            
+            downloadSection.style.display = 'none';
+            previewSection.style.display = 'none';
+            processingSection.style.display = 'none';
+            uploadSection.style.display = 'block';
+            
+            fileInput.value = '';
+            hideError();
+            updateStep(1);
+        }
+
+        // Update Step Indicator
+        function updateStep(step) {
+            currentStep = step;
+            
+            document.querySelectorAll('.step').forEach((stepEl, index) => {
+                stepEl.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    stepEl.classList.add('completed');
+                } else if (index + 1 === step) {
+                    stepEl.classList.add('active');
+                }
+            });
+        }
+
+        // Utility Functions
+        function showLoading() {
+            document.querySelector('.loading-spinner').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-spinner').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorAlert.style.display = 'block';
+        }
+
+        function hideError() {
+            errorAlert.style.display = 'none';
+        }
+
+        function showPreviewSection() {
+            processingSection.style.display = 'none';
+            previewSection.style.display = 'block';
+            updateStep(2);
+        }
+
+        // Initialize
+        updateStep(1);
+    </script>
+</body>
+</html>
